@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/Unknwon/goconfig"
+	"strconv"
 )
 
 const (
-	version           = "0.1"
+	version               = "0.1"
 	defaultListenAddrPort = "127.0.0.1:8080"
 )
 
@@ -19,8 +20,8 @@ type Config struct {
 
 // Packaged all database settings
 type Database struct {
-	Host     string
-	Port     string
+	Addr     string
+	Protocol string
 	User     string
 	Password string
 	Dbname   string
@@ -28,8 +29,12 @@ type Database struct {
 
 // Packaged all Server settings
 type Server struct {
-	ListenAddr string
-	Port       string
+	ListenAddr    string
+	Port          string
+	CPUCore       int
+	Gzip          bool
+	JsonIndent    bool
+	StatusService bool
 }
 
 // Define a global config varible
@@ -82,12 +87,42 @@ func parseConfig(configPath string) {
 
 	if cfg.MustValue("global", "debug") == "true" {
 		config.Debug = true
+	} else {
+		config.Debug = false
 	}
+
+	if cfg.MustValue("server", "gzip") == "true" {
+		config.Server.Gzip = true
+	} else {
+		config.Server.Gzip = false
+	}
+
+	if cfg.MustValue("server", "status_service") == "true" {
+		config.Server.StatusService = true
+	} else {
+		config.Server.StatusService = false
+	}
+
+	if cfg.MustValue("server", "json_indent") == "true" {
+		config.Server.JsonIndent = true
+	} else {
+		config.Server.JsonIndent = false
+	}
+
+	config.Server.CPUCore, err = strconv.Atoi(cfg.MustValue("server", "core"))
+	checkErr(err)
 	config.Server.ListenAddr = cfg.MustValue("server", "listen")
 	config.Server.Port = cfg.MustValue("server", "port")
-	config.Db.Host = cfg.MustValue("database", "host")
-	config.Db.Port = cfg.MustValue("database", "port")
+
+	config.Db.Addr = cfg.MustValue("database", "addr")
+	config.Db.Protocol = cfg.MustValue("database", "protocol")
 	config.Db.User = cfg.MustValue("database", "user")
 	config.Db.Password = cfg.MustValue("database", "password")
 	config.Db.Dbname = cfg.MustValue("database", "dbname")
+
+	// fmt.Println("cpucore: ",config.Server.CPUCore)
+	// fmt.Println("port: ",config.Server.Port)
+	// fmt.Println("Status: ", config.Server.StatusService)
+	// fmt.Println("Gzip: ", config.Server.Gzip)
+	// fmt.Println("debug: ", config.Debug)
 }

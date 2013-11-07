@@ -8,16 +8,18 @@ import (
 )
 
 
+
 // Return a *sql.DB object
 func newDbConn() (*sql.DB, error) {
-	database, err := sql.Open("mysql",
-		config.Db.User+":"+config.Db.Password+"@tcp(["+
-			config.Db.Host+"]:"+config.Db.Port+")/"+
+	db, err := sql.Open("mysql",
+		config.Db.User+":"+config.Db.Password+"@" + 
+			config.Db.Protocol + "("+
+			config.Db.Addr+")/"+
 			config.Db.Dbname+"?&charset=utf8")
 
 	checkErr(err)
-	database.SetMaxIdleConns(1)
-	return database, err
+	db.SetMaxIdleConns(1)
+	return db, err
 }
 
 
