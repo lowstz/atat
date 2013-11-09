@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"os"
 	"log"
 	"runtime"
 	"net/http"
@@ -10,14 +10,26 @@ import (
 
 func main() {
 	parseConfig("./conf/config.conf")
-	printVersion()
-	fmt.Println("Start atat server......")
-	printAsciiIcon()
+	logFile := getLogFile(config.LogFile)
+	startLogger := serverStartInfoLog(logFile)
+	startLogger.Println("AT-AT version", version)
+	startLogger.Println(ascii_icon)
+	startLogger.Println("Start atat server......")
+	startLogger.Println("Server PID: ", os.Getpid())
+//	printVersion()
+//	printAsciiIcon()
+
+
 	runtime.GOMAXPROCS(config.Server.CPUCore)
 	handler := rest.ResourceHandler{}
+	
 	handler.EnableGzip = config.Server.Gzip
 	handler.EnableStatusService = config.Server.Gzip
 	handler.EnableResponseStackTrace = config.Debug
+	handler.DisableJsonIndent = config.Server.JsonIndent
+	handler.Logger = log.New(logFile, "[Request] ", log.LstdFlags)
+
+
 	handler.SetRoutes(
 		rest.Route{"GET", "/book/:id", GetBookFromBookId},
 		rest.Route{"GET", "/book/isbn/:isbn", GetBookFromBookISBN},
@@ -25,15 +37,14 @@ func main() {
 	)
 	if config.Server.ListenAddr != "" && config.Server.Port != "" {
 		ListenAddrPort := config.Server.ListenAddr + ":" + config.Server.Port
-		log.Println("Server listen on: ", ListenAddrPort)
+		startLogger.Println("Server listen on: ", ListenAddrPort)
 		http.ListenAndServe(ListenAddrPort, &handler)
 
 	}else {		
-		log.Println("Server listen on: ", defaultListenAddrPort)
+		startLogger.Println("Server listen on: ", defaultListenAddrPort)
 		http.ListenAndServe(defaultListenAddrPort, &handler)
 	}
 }
-
 
 
 

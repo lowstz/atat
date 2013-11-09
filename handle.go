@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"github.com/ant0ine/go-json-rest"
 )
 
@@ -53,9 +54,7 @@ func GetBookFromBookId(w *rest.ResponseWriter, req *rest.Request) {
 	//	fields := query["fields"][0]
 	//	fmt.Println(query)
 	if len(id) != 8 {
-		var statusMsg ResourceStatus = *ResourceNotFound(req)
-		w.WriteHeader(404)
-		w.WriteJson(&statusMsg)
+		NotFoundError(w, req)
 		return
 	}
 	//	checkErr(err)
@@ -66,9 +65,7 @@ func GetBookFromBookId(w *rest.ResponseWriter, req *rest.Request) {
 		w.WriteJson(&book)
 		return
 	} else {
-		var statusMsg ResourceStatus = *ResourceNotFound(req)
-		w.WriteHeader(404)
-		w.WriteJson(&statusMsg)
+		NotFoundError(w, req)
 		return
 	}
 }
@@ -85,9 +82,7 @@ func GetBookFromBookISBN(w *rest.ResponseWriter, req *rest.Request) {
 
 	// Check the isbn parameter is valid
 	if !isValidIsbn13(book_isbn) {
-		var statusMsg ResourceStatus = *ResourceNotFound(req)
-		w.WriteHeader(404)
-		w.WriteJson(&statusMsg)
+		NotFoundError(w, req)
 		return
 	}
 	
@@ -98,9 +93,7 @@ func GetBookFromBookISBN(w *rest.ResponseWriter, req *rest.Request) {
 		w.WriteJson(&book)
 		return
 	} else {
-		var statusMsg ResourceStatus = *ResourceNotFound(req)
-		w.WriteHeader(404)
-		w.WriteJson(&statusMsg)
+		NotFoundError(w, req)
 		return
 	}
 }
@@ -116,9 +109,7 @@ func GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
 	var keyword, start, count string
 
 	if len(qmap) == 0 {
-		var statusMsg ResourceStatus = *ResourceNotFound(req)
-		w.WriteHeader(404)
-		w.WriteJson(&statusMsg)
+		NotFoundError(w, req)
 		return
 	} else {
 		keyword = qmap[0]
@@ -141,12 +132,18 @@ func GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
 
 	// if keyword search result is null, return 404
 	if booklist.Total == 0 {
-		var statusMsg ResourceStatus = *ResourceNotFound(req)
-		w.WriteHeader(404)
-		w.WriteJson(&statusMsg)
+		NotFoundError(w, req)
 		return
 	} else {
 		w.WriteJson(&booklist)
 		return
 	}
+}
+
+
+func NotFoundError(w *rest.ResponseWriter, req *rest.Request) {
+	var statusMsg ResourceStatus = *ResourceNotFound(req)
+	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(http.StatusNotFound)
+	w.WriteJson(&statusMsg)
 }
