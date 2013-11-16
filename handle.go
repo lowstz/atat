@@ -1,24 +1,26 @@
 package main
 
 import (
-	"net/http"
+	//	"log"
 	"github.com/ant0ine/go-json-rest"
+	"net/http"
+	"strings"
 )
 
 // Store single book infomation.
 type Book struct {
-	Id                int
-	Book_id           string
-	Book_title        string
-	Book_author       string
-	Book_category_num string
-	Book_isbn         string
-	Book_page_num     string
-	Book_price        string
-	Book_pubdate      string
-	Book_publisher    string
-	Book_ref_no       string
-	Book_summary      string
+	Id                int    `json:"-"`
+	Book_id           string `json:"id",omitempty`
+	Book_title        string `json:"title,omitempty"`
+	Book_author       string `json:"author,omitempty"`
+	Book_category_num string `json:"category_num,omitempty"`
+	Book_isbn         string `json:"isbn,omitempty"`
+	Book_page_num     string `json:"page_num,omitempty"`
+	Book_price        string `json:"price,omitempty"`
+	Book_pubdate      string `json:"pubdate,omitempty"`
+	Book_publisher    string `json:"publisher,omitempty"`
+	Book_ref_no       string `json:"ref_no,omitempty"`
+	Book_summary      string `json:"summary,omitempty"`
 }
 
 // Store multiple books.
@@ -39,8 +41,8 @@ type ResourceStatus struct {
 // Return a ResourceStatus struct if Resource not found.
 func ResourceNotFound(req *rest.Request) *ResourceStatus {
 	return &ResourceStatus{
-		Msg:"Resource not found",
-		Code: 404,
+		Msg:     "Resource not found",
+		Code:    404,
 		Request: req.Method + " " + req.URL.Path + req.URL.RawQuery,
 	}
 }
@@ -49,16 +51,26 @@ func ResourceNotFound(req *rest.Request) *ResourceStatus {
 // Query a book_id and response one single book information in a json.
 func GetBookFromBookId(w *rest.ResponseWriter, req *rest.Request) {
 	//	params := map[string][]string{"userId":[]string{ req.PathParam("id") }}
-	id := req.PathParam("id")
+	//  book_id := req.PathParam("id")
 	//	query := req.URL.Query()
 	//	fields := query["fields"][0]
 	//	fmt.Println(query)
-	if len(id) != 8 {
+	bookId := req.PathParam("id")
+	parameter := req.URL.Query()
+	fieldsMap := parameter["fields"]
+	var fields []string
+	if len(fieldsMap) == 0 {
+		fields = []string{}
+	} else {
+		fields = strings.Split(fieldsMap[0], ",")
+	}
+
+	if len(bookId) != 8 {
 		NotFoundError(w, req)
 		return
 	}
 	//	checkErr(err)
-	book, err := dbQueryBookFromBookId(id)
+	book, err := dbQueryBookFromBookId(bookId, fields)
 	checkErr(err)
 
 	if book.Id != 0 {
@@ -75,18 +87,22 @@ func GetBookFromBookId(w *rest.ResponseWriter, req *rest.Request) {
 func GetBookFromBookISBN(w *rest.ResponseWriter, req *rest.Request) {
 	//	params := map[string][]string{"userId":[]string{ req.PathParam("id") }}
 	book_isbn := req.PathParam("isbn")
-	//	query := req.URL.Query()
-	//	fields := query["fields"][0]
-	//	fmt.Println(query)
-	//	checkErr(err)
+	parameter := req.URL.Query()
+	fieldsMap := parameter["fields"]
 
-	// Check the isbn parameter is valid
 	if !isValidIsbn13(book_isbn) {
 		NotFoundError(w, req)
 		return
 	}
-	
-	book, err := dbQueryBookFromBookIsbn(book_isbn)
+
+	var fields []string
+	if len(fieldsMap) == 0 {
+		fields = []string{}
+	} else {
+		fields = strings.Split(fieldsMap[0], ",")
+	}
+
+	book, err := dbQueryBookFromBookIsbn(book_isbn, fields)
 	checkErr(err)
 
 	if book.Id != 0 {
@@ -99,35 +115,52 @@ func GetBookFromBookISBN(w *rest.ResponseWriter, req *rest.Request) {
 }
 
 // Handler for route /book/search/
-// Query from keyword and response a booklist with all book 
+// Query from keyword and response a booklist with all book
 // match keyword in a json.
 func GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
 	parameter := req.URL.Query()
-	qmap := parameter["q"]
-	startmap := parameter["start"]
-	countmap := parameter["count"]
-	var keyword, start, count string
+	keywordMap := parameter["q"]
+	startMap := parameter["start"]
+	countMap := parameter["count"]
+	fieldsMap := parameter["fields"]
 
-	if len(qmap) == 0 {
+	var (
+		keyword, fields []string
+		start, count    string
+	)
+	if len(keywordMap) == 0 {
+		NotFoundError(w, req)
+		return
+	} else if keywordMap[0] == "" {
 		NotFoundError(w, req)
 		return
 	} else {
-		keyword = qmap[0]
+		//		log.Println("keyword: ", keywordMap[0])
+		keyword = strings.Split(keywordMap[0], " ")
 	}
 
-	if len(startmap) == 0 {
+	if len(fieldsMap) == 0 {
+		fields = []string{}
+	} else {
+		fields = strings.Split(fieldsMap[0], ",")
+	}
+
+	if len(startMap) == 0 {
 		start = "0"
 	} else {
-		start = startmap[0]
+		start = startMap[0]
 	}
 
-	if len(countmap) == 0 {
+	if len(countMap) == 0 {
 		count = "20"
 	} else {
-		count = countmap[0]
+		count = countMap[0]
 	}
-
-	booklist, err := dbQueryBookListFromKeyword(keyword, start, count)
+	// log.Println(keyword)
+	// log.Println(fields)
+	// log.Println(start)
+	// log.Println(count)
+	booklist, err := dbQueryBookListFromKeyword(keyword, fields, start, count)
 	checkErr(err)
 
 	// if keyword search result is null, return 404
@@ -139,7 +172,6 @@ func GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
 		return
 	}
 }
-
 
 func NotFoundError(w *rest.ResponseWriter, req *rest.Request) {
 	var statusMsg ResourceStatus = *ResourceNotFound(req)

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+//	"log"
 	"strconv"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
@@ -24,15 +24,13 @@ func newDbConn() (*sql.DB, error) {
 
 
 // Statistics books number of search results.
-func dbQueryBookCount(keyword string) (int, error) {
+func dbQueryBookCount(keyword []string) (int, error) {
 	db, err := newDbConn()
 	checkErr(err)
 
 	var itemCount int
-	query := "select count(*) as count from bookinfo " + 
-		"where book_title like '%" +
-		keyword + "%'"
-
+	query := makeBookCountQuery(keyword)
+//	log.Println(query)
 	err = db.QueryRow(query).Scan(&itemCount)
 	checkErr(err)
 	db.Close()
@@ -41,16 +39,15 @@ func dbQueryBookCount(keyword string) (int, error) {
 
 // Fetch a single book information from book_id and 
 // return as a Book struct.
-func dbQueryBookFromBookId(book_id string) (Book, error) {
+func dbQueryBookFromBookId(book_id string, fields []string) (Book, error) {
 	db, err := newDbConn()
 	checkErr(err)
-	query := "select " +
-		"id, book_id, book_title, book_author, " +
-		"book_page_num, book_pubdate, book_publisher, " +
-		"book_isbn, book_price, book_ref_no, book_category_num," +
-		"book_summary from bookinfo where book_id = ?"
 
-	rows, err := db.Query(query, book_id)
+	query := makeBookIdQuery(fields)
+//	rows, err := db.Query(query)
+	stmt, err := db.Prepare(query)
+	checkErr(err)
+	rows, err := stmt.Query(book_id)
 	checkErr(err)
 	var book Book
 	for rows.Next() {
@@ -78,20 +75,17 @@ func dbQueryBookFromBookId(book_id string) (Book, error) {
 
 // Fetch a single book information from book_isbn and 
 // return as a Book struct.
-func dbQueryBookFromBookIsbn(book_isbn string) (Book, error) {
+func dbQueryBookFromBookIsbn(book_isbn string, fields []string) (Book, error) {
 	db, err := newDbConn()
 	checkErr(err)
 	
-	query := "select " +
-		"id, book_id, book_title, book_author, " +
-		"book_page_num, book_pubdate, book_publisher, " +
-		"book_isbn, book_price, book_ref_no, book_category_num, book_summary " +
-		" from bookinfo where book_isbn = ?"
-
-	rows, err := db.Query(query, book_isbn)
+	query := makeBookIsbnQuery(fields)
+	stmt, err := db.Prepare(query)
 	checkErr(err)
-	var book Book
+	rows, err := stmt.Query(book_isbn)
+	checkErr(err)
 
+	var book Book
 	for rows.Next() {
 		err := rows.Scan(
 			&book.Id,
@@ -116,19 +110,14 @@ func dbQueryBookFromBookIsbn(book_isbn string) (Book, error) {
 
 // Fetch a booklist from keyword and 
 // return as a BookList struct.
-func dbQueryBookListFromKeyword(keyword, start, count string) (BookList, error) {
+func dbQueryBookListFromKeyword(keyword, fields []string, start, count string) (BookList, error) {
 	db, err := newDbConn()
 	checkErr(err)
 
 	total, err := dbQueryBookCount(keyword)
 	checkErr(err)
 
-	query := "select " +
-		"book_id, book_isbn, book_title, book_author, book_ref_no" +
-		" from bookinfo where book_title like '%" +
-		keyword + "%' limit " +
-		start + "," + count
-
+	query := makeKeywordSearchQuery(keyword, fields, start, count)
 	rows, err := db.Query(query)
 	checkErr(err)
 
@@ -139,16 +128,28 @@ func dbQueryBookListFromKeyword(keyword, start, count string) (BookList, error) 
 
 	for rows.Next() {
 		var book Book
+		// err := rows.Scan(
+		// 	&book.Book_id,
+		// 	&book.Book_isbn,
+		// 	&book.Book_title,
+		// 	&book.Book_author,
+		// 	&book.Book_ref_no,
+		// )
 		err := rows.Scan(
+			&book.Id,
 			&book.Book_id,
-			&book.Book_isbn,
 			&book.Book_title,
 			&book.Book_author,
+			&book.Book_page_num,
+			&book.Book_pubdate,
+			&book.Book_publisher,
+			&book.Book_isbn,
+			&book.Book_price,
 			&book.Book_ref_no,
+			&book.Book_category_num,
+			&book.Book_summary,
 		)
-		if err != nil {
-			log.Fatal(err)
-		}
+		checkErr(err)
 		booklist.Books = append(booklist.Books, book)
 	}
 	rows.Close()
