@@ -1,35 +1,12 @@
 package main
 
 import (
-	//	"log"
+	//	"fmt"
 	"github.com/ant0ine/go-json-rest"
 	"net/http"
+	"strconv"
 	"strings"
 )
-
-// Store single book infomation.
-type Book struct {
-	Id                int    `json:"-"`
-	Book_id           string `json:"id",omitempty`
-	Book_title        string `json:"title,omitempty"`
-	Book_author       string `json:"author,omitempty"`
-	Book_category_num string `json:"category_num,omitempty"`
-	Book_isbn         string `json:"isbn,omitempty"`
-	Book_page_num     string `json:"page_num,omitempty"`
-	Book_price        string `json:"price,omitempty"`
-	Book_pubdate      string `json:"pubdate,omitempty"`
-	Book_publisher    string `json:"publisher,omitempty"`
-	Book_ref_no       string `json:"ref_no,omitempty"`
-	Book_summary      string `json:"summary,omitempty"`
-}
-
-// Store multiple books.
-type BookList struct {
-	Start int
-	Count int
-	Total int
-	Books []Book
-}
 
 // Use for return status if some exception occurs.
 type ResourceStatus struct {
@@ -47,33 +24,24 @@ func ResourceNotFound(req *rest.Request) *ResourceStatus {
 	}
 }
 
-// Handler for route /book/:id
+// controller for route /book/:id
 // Query a book_id and response one single book information in a json.
 func GetBookFromBookId(w *rest.ResponseWriter, req *rest.Request) {
-	//	params := map[string][]string{"userId":[]string{ req.PathParam("id") }}
-	//  book_id := req.PathParam("id")
-	//	query := req.URL.Query()
-	//	fields := query["fields"][0]
-	//	fmt.Println(query)
 	bookId := req.PathParam("id")
 	parameter := req.URL.Query()
 	fieldsMap := parameter["fields"]
-	var fields []string
-	if len(fieldsMap) == 0 {
-		fields = []string{}
-	} else {
-		fields = strings.Split(fieldsMap[0], ",")
-	}
 
 	if len(bookId) != 8 {
 		NotFoundError(w, req)
 		return
 	}
+
+	fields := fieldsFilter(fieldsMap)
 	//	checkErr(err)
-	book, err := dbQueryBookFromBookId(bookId, fields)
+	book, err := modelQueryBookFromBookId(bookId, fields)
 	checkErr(err)
 
-	if book.Id != 0 {
+	if book.store_id != 0 {
 		w.WriteJson(&book)
 		return
 	} else {
@@ -82,10 +50,9 @@ func GetBookFromBookId(w *rest.ResponseWriter, req *rest.Request) {
 	}
 }
 
-// Handler for route /book/isbn/:isbn
+// controller for route /book/isbn/:isbn
 // Query from book_isbn and response one single book information in a json.
 func GetBookFromBookISBN(w *rest.ResponseWriter, req *rest.Request) {
-	//	params := map[string][]string{"userId":[]string{ req.PathParam("id") }}
 	book_isbn := req.PathParam("isbn")
 	parameter := req.URL.Query()
 	fieldsMap := parameter["fields"]
@@ -95,17 +62,12 @@ func GetBookFromBookISBN(w *rest.ResponseWriter, req *rest.Request) {
 		return
 	}
 
-	var fields []string
-	if len(fieldsMap) == 0 {
-		fields = []string{}
-	} else {
-		fields = strings.Split(fieldsMap[0], ",")
-	}
+	fields := fieldsFilter(fieldsMap)
 
-	book, err := dbQueryBookFromBookIsbn(book_isbn, fields)
+	book, err := modelQueryBookFromBookIsbn(book_isbn, fields)
 	checkErr(err)
 
-	if book.Id != 0 {
+	if book.store_id != 0 {
 		w.WriteJson(&book)
 		return
 	} else {
@@ -114,7 +76,7 @@ func GetBookFromBookISBN(w *rest.ResponseWriter, req *rest.Request) {
 	}
 }
 
-// Handler for route /book/search/
+// controller for route /book/search/
 // Query from keyword and response a booklist with all book
 // match keyword in a json.
 func GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
@@ -135,15 +97,15 @@ func GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
 		NotFoundError(w, req)
 		return
 	} else {
-		//		log.Println("keyword: ", keywordMap[0])
 		keyword = strings.Split(keywordMap[0], " ")
+		keyword = replaceSpecialChar(keyword)
+		if len(keyword) == 0 {
+			NotFoundError(w, req)
+			return
+		}
 	}
 
-	if len(fieldsMap) == 0 {
-		fields = []string{}
-	} else {
-		fields = strings.Split(fieldsMap[0], ",")
-	}
+	fields = fieldsFilter(fieldsMap)
 
 	if len(startMap) == 0 {
 		start = "0"
@@ -155,12 +117,16 @@ func GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
 		count = "20"
 	} else {
 		count = countMap[0]
+		if countInt, _ := strconv.Atoi(count); countInt > 100 {
+			count = "100"
+		}
 	}
-	// log.Println(keyword)
-	// log.Println(fields)
-	// log.Println(start)
-	// log.Println(count)
-	booklist, err := dbQueryBookListFromKeyword(keyword, fields, start, count)
+
+	//  fmt.Println(keyword)
+	//	fmt.Println(fields)
+	//	fmt.Println(start)
+	//	fmt.Println(count)
+	booklist, err := modelQueryBookListFromKeyword(keyword, fields, start, count)
 	checkErr(err)
 
 	// if keyword search result is null, return 404
@@ -173,9 +139,28 @@ func GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
 	}
 }
 
+// return 404 json response
 func NotFoundError(w *rest.ResponseWriter, req *rest.Request) {
 	var statusMsg ResourceStatus = *ResourceNotFound(req)
 	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(http.StatusNotFound)
 	w.WriteJson(&statusMsg)
+}
+
+// Filter invalid field in the original fieldlist.
+func fieldsFilter(fieldsMap []string) []string {
+	var fields, secureFields []string
+	if len(fieldsMap) == 0 {
+		return defaultQueryFields
+	} else {
+		fields = strings.Split(fieldsMap[0], ",")
+		for _, value := range fields {
+			for _, secureValue := range defaultQueryFields {
+				if value == secureValue {
+					secureFields = append(secureFields, value)
+				}
+			}
+		}
+	}
+	return secureFields
 }

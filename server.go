@@ -1,13 +1,12 @@
 package main
 
 import (
-	"os"
-	"log"
-	"runtime"
-	"net/http"
 	"github.com/ant0ine/go-json-rest"
+	"log"
+	"net/http"
+	"os"
+	"runtime"
 )
-
 
 func main() {
 	parseConfig("./conf/config.conf")
@@ -20,7 +19,7 @@ func main() {
 
 	runtime.GOMAXPROCS(config.Server.CPUCore)
 
-	handler := rest.ResourceHandler{}	
+	handler := rest.ResourceHandler{}
 	handler.EnableGzip = config.Server.Gzip
 	handler.EnableStatusService = config.Server.Gzip
 	handler.EnableResponseStackTrace = config.Debug
@@ -38,7 +37,7 @@ func main() {
 		startLogger.Println("Server listen on: ", ListenAddrPort)
 		http.ListenAndServe(ListenAddrPort, &handler)
 
-	}else {		
+	} else {
 		startLogger.Println("Server listen on: ", defaultListenAddrPort)
 		http.ListenAndServe(defaultListenAddrPort, &handler)
 	}

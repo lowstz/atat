@@ -1,7 +1,7 @@
 package main
 
 import (
-//	"log"
+	//	"log"
 	"github.com/Unknwon/goconfig"
 	"strconv"
 )
@@ -9,7 +9,7 @@ import (
 const (
 	version               = "0.1"
 	defaultListenAddrPort = "127.0.0.1:8080"
-	ascii_icon = `
+	ascii_icon            = `
 
                          ____==========_______
               _--____   |    | ""  " "|       \
@@ -77,8 +77,7 @@ func parseConfig(configPath string) {
 		panic("Fail to load configuration file: " + err.Error())
 	}
 
-
-// Parse the global setcion
+	// Parse the global setcion
 	if cfg.MustValue("global", "debug") == "true" {
 		config.Debug = true
 	} else {
@@ -87,7 +86,7 @@ func parseConfig(configPath string) {
 
 	config.LogFile = cfg.MustValue("global", "logfile")
 
-// Parse the server setcion
+	// Parse the server setcion
 	if cfg.MustValue("server", "gzip") == "true" {
 		config.Server.Gzip = true
 	} else {
@@ -111,7 +110,7 @@ func parseConfig(configPath string) {
 	config.Server.ListenAddr = cfg.MustValue("server", "listen")
 	config.Server.Port = cfg.MustValue("server", "port")
 
-// Parse the database setcion
+	// Parse the database setcion
 	config.Db.Addr = cfg.MustValue("database", "addr")
 	config.Db.Protocol = cfg.MustValue("database", "protocol")
 	config.Db.User = cfg.MustValue("database", "user")
@@ -124,5 +123,3 @@ func parseConfig(configPath string) {
 	// fmt.Println("Gzip: ", config.Server.Gzip)
 	//	log.Println("debug: ", config.Server.JsonIndent)
 }
-
-

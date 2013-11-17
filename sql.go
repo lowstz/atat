@@ -7,18 +7,18 @@ import (
 
 var (
 	defaultQueryFields = []string{
+		//		"store_id",
 		"id",
-		"book_id",
-		"book_title",
-		"book_author",
-		"book_page_num",
-		"book_pubdate",
-		"book_publisher",
-		"book_isbn",
-		"book_price",
-		"book_ref_no",
-		"book_category_num",
-		"book_summary ",
+		"title",
+		"author",
+		"page_num",
+		"pubdate",
+		"publisher",
+		"isbn",
+		"price",
+		"ref_no",
+		"category_num",
+		"summary",
 	}
 )
 
@@ -26,13 +26,15 @@ var (
 func makeBookCountQuery(keyword []string) string {
 	var condition []string
 	selectQuery := "select count(*) as count from bookinfo where "
+
 	for _, value := range keyword {
 		bookCondition := fmt.Sprintf(
-			"(book_author like '%%%s%%' or book_title like '%%%s%%')", value, value)
+			"(author like '%%%s%%' or title like '%%%s%%' or isbn='%%%s%%')",
+			value, value, value)
 		condition = append(condition, bookCondition)
 	}
 	conditionQuery := strings.Join(condition, " and ")
-	sqlQuery :=  selectQuery + conditionQuery
+	sqlQuery := selectQuery + conditionQuery
 	return sqlQuery
 }
 
@@ -43,8 +45,8 @@ func makeBookIdQuery(fields []string) string {
 	}
 	selectQuery := "select "
 	fieldsQuery := strings.Join(fields, ",")
-	conditionQuery := " from bookinfo where book_id=?"
-//	conditionQuery := fmt.Sprintf("book_id='%s'", book_id)
+	conditionQuery := " from bookinfo where id=?"
+	//	conditionQuery := fmt.Sprintf("book_id='%s'", book_id)
 
 	sqlQuery := selectQuery + fieldsQuery + conditionQuery
 	return sqlQuery
@@ -57,8 +59,8 @@ func makeBookIsbnQuery(fields []string) string {
 	}
 	selectQuery := "select "
 	fieldsQuery := strings.Join(fields, ",")
-	conditionQuery := " from bookinfo where book_isbn=?"
-//	conditionQuery := fmt.Sprintf("book_isbn='%s'", book_isbn)
+	conditionQuery := " from bookinfo where isbn=?"
+	//	conditionQuery := fmt.Sprintf("book_isbn='%s'", book_isbn)
 
 	sqlQuery := selectQuery + fieldsQuery + conditionQuery
 	return sqlQuery
@@ -69,13 +71,14 @@ func makeKeywordSearchQuery(keyword, fields []string, start, count string) strin
 	if len(fields) == 0 {
 		fields = defaultQueryFields
 	}
+
 	var condition []string
 	selectQuery := "select "
 	fieldsQuery := strings.Join(fields, ",")
 	fromQuery := " from bookinfo where "
 	for _, value := range keyword {
 		bookCondition := fmt.Sprintf(
-			"(book_author like '%%%s%%' or book_title like '%%%s%%' or book_isbn='%s')",
+			"(author like '%%%s%%' or title like '%%%s%%' or isbn='%s')",
 			value, value, value)
 		condition = append(condition, bookCondition)
 	}
@@ -85,4 +88,39 @@ func makeKeywordSearchQuery(keyword, fields []string, start, count string) strin
 	sqlQuery := selectQuery + fieldsQuery +
 		fromQuery + conditionQuery + pageQuery
 	return sqlQuery
+}
+
+// Replace unsafe request keyword query parameters.
+func replaceSpecialChar(keyword []string) []string {
+	var secureKeyword []string
+	for _, value := range keyword {
+		switch value {
+		case "<":
+			break
+		case ">":
+			break
+		case "*":
+			break
+		case "_":
+			break
+		case "?":
+			break
+		case "'":
+			break
+		case ",":
+			break
+		case "/":
+			break
+		case ":":
+			break
+		case "*/":
+			break
+		case "\r\n":
+			break
+		default:
+			secureKeyword = append(secureKeyword, value)
+		}
+
+	}
+	return secureKeyword
 }
