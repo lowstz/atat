@@ -41,7 +41,7 @@ func GetBookFromBookId(w *rest.ResponseWriter, req *rest.Request) {
 	book, err := modelQueryBookFromBookId(bookId, fields)
 	checkErr(err)
 
-	if book.store_id != 0 {
+	if book.Id != "" {
 		w.WriteJson(&book)
 		return
 	} else {
@@ -67,7 +67,7 @@ func GetBookFromBookISBN(w *rest.ResponseWriter, req *rest.Request) {
 	book, err := modelQueryBookFromBookIsbn(book_isbn, fields)
 	checkErr(err)
 
-	if book.store_id != 0 {
+	if book.Isbn != "" {
 		w.WriteJson(&book)
 		return
 	} else {
@@ -91,6 +91,9 @@ func GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
 		start, count    string
 	)
 	if len(keywordMap) == 0 {
+		NotFoundError(w, req)
+		return
+	} else if keywordMap[0] == " " {
 		NotFoundError(w, req)
 		return
 	} else if keywordMap[0] == "" {

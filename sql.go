@@ -29,7 +29,7 @@ func makeBookCountQuery(keyword []string) string {
 
 	for _, value := range keyword {
 		bookCondition := fmt.Sprintf(
-			"(author like '%%%s%%' or title like '%%%s%%' or isbn='%%%s%%')",
+			"(author like '%%%s%%' or title like '%%%s%%' or isbn like '%%%s%%')",
 			value, value, value)
 		condition = append(condition, bookCondition)
 	}
@@ -78,7 +78,7 @@ func makeKeywordSearchQuery(keyword, fields []string, start, count string) strin
 	fromQuery := " from bookinfo where "
 	for _, value := range keyword {
 		bookCondition := fmt.Sprintf(
-			"(author like '%%%s%%' or title like '%%%s%%' or isbn='%s')",
+			"(author like '%%%s%%' or title like '%%%s%%' or isbn like '%%%s%%')",
 			value, value, value)
 		condition = append(condition, bookCondition)
 	}
@@ -120,7 +120,21 @@ func replaceSpecialChar(keyword []string) []string {
 		default:
 			secureKeyword = append(secureKeyword, value)
 		}
-
 	}
+	fmt.Println(secureKeyword)
 	return secureKeyword
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

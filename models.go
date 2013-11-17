@@ -11,7 +11,7 @@ import (
 // Store single book infomation.
 type Book struct {
 	store_id     uint64 `json:"-"`
-	Id           string `json:"id",omitempty`
+	Id           string `json:"id,omitempty"`
 	Title        string `json:"title,omitempty"`
 	Author       string `json:"author,omitempty"`
 	Category_num string `json:"category_num,omitempty"`
@@ -173,6 +173,9 @@ func mapDataToStruct(fields, data []string) Book {
 			id, _ := strconv.Atoi(data[key])
 			bookValue.FieldByName(strings.Title(value)).SetUint(uint64(id))
 		case reflect.String:
+			if len(data[key]) == 0 {
+				data[key] = " "
+			}
 			bookValue.FieldByName(strings.Title(value)).SetString(data[key])
 		default:
 		}
