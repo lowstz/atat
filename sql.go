@@ -19,6 +19,8 @@ var (
 		"ref_no",
 		"category_num",
 		"summary",
+		"image",
+		"images",
 	}
 )
 
@@ -121,20 +123,6 @@ func replaceSpecialChar(keyword []string) []string {
 			secureKeyword = append(secureKeyword, value)
 		}
 	}
-	fmt.Println(secureKeyword)
+//	fmt.Println(secureKeyword)
 	return secureKeyword
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

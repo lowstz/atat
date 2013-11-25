@@ -27,9 +27,9 @@ func main() {
 	handler.Logger = log.New(logFile, "[Request] ", log.LstdFlags)
 
 	handler.SetRoutes(
+		rest.Route{"GET", "/book/search", GetBookListFromKeyword},
 		rest.Route{"GET", "/book/:id", GetBookFromBookId},
 		rest.Route{"GET", "/book/isbn/:isbn", GetBookFromBookISBN},
-		rest.Route{"GET", "/book/search/", GetBookListFromKeyword},
 	)
 
 	if config.Server.ListenAddr != "" && config.Server.Port != "" {

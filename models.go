@@ -6,22 +6,32 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"encoding/json"
+//	"fmt"
 )
 
 // Store single book infomation.
 type Book struct {
-	store_id     uint64 `json:"-"`
-	Id           string `json:"id,omitempty"`
-	Title        string `json:"title,omitempty"`
-	Author       string `json:"author,omitempty"`
-	Category_num string `json:"category_num,omitempty"`
-	Isbn         string `json:"isbn,omitempty"`
-	Page_num     string `json:"page_num,omitempty"`
-	Price        string `json:"price,omitempty"`
-	Pubdate      string `json:"pubdate,omitempty"`
-	Publisher    string `json:"publisher,omitempty"`
-	Ref_no       string `json:"ref_no,omitempty"`
-	Summary      string `json:"summary,omitempty"`
+	store_id     uint64     `json:"-"`
+	Id           string     `json:"id,omitempty"`
+	Title        string     `json:"title,omitempty"`
+	Author       string     `json:"author,omitempty"`
+	Category_num string     `json:"category_num,omitempty"`
+	Isbn         string     `json:"isbn,omitempty"`
+	Page_num     string     `json:"page_num,omitempty"`
+	Price        string     `json:"price,omitempty"`
+	Pubdate      string     `json:"pubdate,omitempty"`
+	Publisher    string     `json:"publisher,omitempty"`
+	Ref_no       string     `json:"ref_no,omitempty"`
+	Summary      string     `json:"summary,omitempty"`
+	Image        string     `json:"image,omitempty"`
+	Images       Book_Image `json:"images,omitempty"`
+}
+
+type Book_Image struct {
+	Large  string `json:"large,omitempty"`
+	Medium string `json:"medium,omitempty"`
+	Small  string `json:"small,omitempty"`
 }
 
 // Store multiple books.
@@ -166,19 +176,31 @@ func mapDataToStruct(fields, data []string) Book {
 	//	bookType := reflect.TypeOf(&book).Elem()
 	for key, value := range fields {
 		kind := bookValue.FieldByName(strings.Title(value)).Kind()
-		// fmt.Println(kind)
-		// fmt.Println(book)
+//		fmt.Println(kind)
 		switch kind {
 		case reflect.Uint64:
 			id, _ := strconv.Atoi(data[key])
 			bookValue.FieldByName(strings.Title(value)).SetUint(uint64(id))
 		case reflect.String:
+//			fmt.Println(key, value)
 			if len(data[key]) == 0 {
 				data[key] = " "
 			}
 			bookValue.FieldByName(strings.Title(value)).SetString(data[key])
+		case reflect.Struct:
+			f :=  make(map[string]string)
+			json.Unmarshal([]byte(data[key]), &f)
+//			fmt.Println(value)
+//			fmt.Println(f)
+			for img_type, url := range f {
+//				fmt.Println(img_type, url)
+				bookValue.FieldByName(strings.Title(value)).FieldByName(strings.Title(img_type)).SetString(url)
+			}
 		default:
 		}
 	}
 	return book
 }
+
+
+

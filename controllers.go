@@ -1,7 +1,6 @@
 package main
 
 import (
-	//	"fmt"
 	"github.com/ant0ine/go-json-rest"
 	"net/http"
 	"strconv"
@@ -81,6 +80,7 @@ func GetBookFromBookISBN(w *rest.ResponseWriter, req *rest.Request) {
 // match keyword in a json.
 func GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
 	parameter := req.URL.Query()
+//	log.Println(req.URL.RawQuery)
 	keywordMap := parameter["q"]
 	startMap := parameter["start"]
 	countMap := parameter["count"]
