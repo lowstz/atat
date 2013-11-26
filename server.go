@@ -28,8 +28,11 @@ func main() {
 
 	handler.SetRoutes(
 		rest.Route{"GET", "/book/search", GetBookListFromKeyword},
+		rest.Route{"HEAD", "/book/search", GetBookListFromKeyword},
 		rest.Route{"GET", "/book/:id", GetBookFromBookId},
+		rest.Route{"HEAD", "/book/:id", GetBookFromBookId},
 		rest.Route{"GET", "/book/isbn/:isbn", GetBookFromBookISBN},
+		rest.Route{"HEAD", "/book/isbn/:isbn", GetBookFromBookISBN},
 	)
 
 	if config.Server.ListenAddr != "" && config.Server.Port != "" {
