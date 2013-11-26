@@ -17,7 +17,8 @@ var (
 		"isbn",
 		"price",
 		"ref_no",
-		"category_num",
+		"category_name",
+		"average",
 		"summary",
 		"image",
 		"images",
@@ -31,12 +32,13 @@ func makeBookCountQuery(keyword []string) string {
 
 	for _, value := range keyword {
 		bookCondition := fmt.Sprintf(
-			"(author like '%%%s%%' or title like '%%%s%%' or isbn like '%%%s%%')",
-			value, value, value)
+			"(author like '%%%s%%' or title like '%%%s%%' or summary like '%%%s%%' or isbn='%s' )",
+			value, value, value, value)
 		condition = append(condition, bookCondition)
 	}
 	conditionQuery := strings.Join(condition, " and ")
 	sqlQuery := selectQuery + conditionQuery
+//	fmt.Println(sqlQuery)
 	return sqlQuery
 }
 
@@ -47,10 +49,13 @@ func makeBookIdQuery(fields []string) string {
 	}
 	selectQuery := "select "
 	fieldsQuery := strings.Join(fields, ",")
-	conditionQuery := " from bookinfo where id=?"
+	//	conditionQuery := " from  bookinfo left join book_category on bookinfo.category_num=book_category.category_num where id=?"
+	conditionQuery := " from bookinfo left join douban on bookinfo.id=douban.book_id " +
+		"left join book_category on bookinfo.category_num=book_category.category_num where id=?"
 	//	conditionQuery := fmt.Sprintf("book_id='%s'", book_id)
 
 	sqlQuery := selectQuery + fieldsQuery + conditionQuery
+//	fmt.Println(sqlQuery)
 	return sqlQuery
 }
 
@@ -61,10 +66,14 @@ func makeBookIsbnQuery(fields []string) string {
 	}
 	selectQuery := "select "
 	fieldsQuery := strings.Join(fields, ",")
-	conditionQuery := " from bookinfo where isbn=?"
+	//	conditionQuery := " from bookinfo left join book_category on bookinfo.category_num=book_category.category_num where isbn=?"
+	conditionQuery := " from bookinfo left join douban on bookinfo.id=douban.book_id " +
+		"left join book_category on bookinfo.category_num=book_category.category_num where isbn=?"
+
 	//	conditionQuery := fmt.Sprintf("book_isbn='%s'", book_isbn)
 
 	sqlQuery := selectQuery + fieldsQuery + conditionQuery
+//	fmt.Println(sqlQuery)
 	return sqlQuery
 }
 
@@ -77,18 +86,23 @@ func makeKeywordSearchQuery(keyword, fields []string, start, count string) strin
 	var condition []string
 	selectQuery := "select "
 	fieldsQuery := strings.Join(fields, ",")
-	fromQuery := " from bookinfo where "
+	//	oldfromQuery := " from bookinfo left join book_category on bookinfo.category_num=book_category.category_num where "
+	fromQuery := " from bookinfo left join douban on bookinfo.id=douban.book_id " +
+		"left join book_category on bookinfo.category_num=book_category.category_num where "
 	for _, value := range keyword {
 		bookCondition := fmt.Sprintf(
-			"(author like '%%%s%%' or title like '%%%s%%' or isbn like '%%%s%%')",
-			value, value, value)
+			"(author like '%%%s%%' or title like '%%%s%%' or summary like '%%%s%%' or isbn='%s' )",
+			value, value, value, value)
 		condition = append(condition, bookCondition)
 	}
+
 	conditionQuery := strings.Join(condition, " and ")
+	sortQuery := " order by (average*100+num_raters*0.3) desc "
 	pageQuery := " limit " + start + "," + count
 
-	sqlQuery := selectQuery + fieldsQuery +
-		fromQuery + conditionQuery + pageQuery
+	sqlQuery := selectQuery + fieldsQuery + 
+		fromQuery + conditionQuery + sortQuery + pageQuery
+//	fmt.Println(sqlQuery)
 	return sqlQuery
 }
 
@@ -123,6 +137,33 @@ func replaceSpecialChar(keyword []string) []string {
 			secureKeyword = append(secureKeyword, value)
 		}
 	}
-//	fmt.Println(secureKeyword)
+	//	fmt.Println(secureKeyword)
 	return secureKeyword
+}
+
+
+// replace unclear search keyword
+// TODO: collect a unclear search keyword database.
+func replaceUnclearChar(keyword []string) []string {
+	var clearKeyword []string
+	if len(keyword) == 1 {
+		for _, value := range keyword {
+			switch value {
+			case "C":
+				value = "C语言"
+				clearKeyword = append(clearKeyword, value)
+				break;
+			case "c":
+				value = "c语言"
+				clearKeyword = append(clearKeyword, value)
+				break;
+			default:
+				clearKeyword = append(clearKeyword, value)
+			}
+		}
+	} else {
+		clearKeyword = keyword
+	}
+	//	fmt.Println(secureKeyword)
+	return clearKeyword
 }

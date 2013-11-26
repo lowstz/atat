@@ -40,7 +40,7 @@ func GetBookFromBookId(w *rest.ResponseWriter, req *rest.Request) {
 	book, err := modelQueryBookFromBookId(bookId, fields)
 	checkErr(err)
 
-	if book.Id != "" {
+	if book.Id != " " {
 		w.WriteJson(&book)
 		return
 	} else {
@@ -66,7 +66,7 @@ func GetBookFromBookISBN(w *rest.ResponseWriter, req *rest.Request) {
 	book, err := modelQueryBookFromBookIsbn(book_isbn, fields)
 	checkErr(err)
 
-	if book.Isbn != "" {
+	if book.Isbn != " " {
 		w.WriteJson(&book)
 		return
 	} else {
@@ -102,6 +102,7 @@ func GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
 	} else {
 		keyword = strings.Split(keywordMap[0], " ")
 		keyword = replaceSpecialChar(keyword)
+		keyword = replaceUnclearChar(keyword)
 		if len(keyword) == 0 {
 			NotFoundError(w, req)
 			return
@@ -158,6 +159,9 @@ func fieldsFilter(fieldsMap []string) []string {
 	} else {
 		fields = strings.Split(fieldsMap[0], ",")
 		for _, value := range fields {
+			if value == "douban_rate" {
+				value = "average"
+			}
 			for _, secureValue := range defaultQueryFields {
 				if value == secureValue {
 					secureFields = append(secureFields, value)
