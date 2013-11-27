@@ -41,6 +41,9 @@ func GetBookFromBookId(w *rest.ResponseWriter, req *rest.Request) {
 	checkErr(err)
 
 	if book.Id != " " {
+		// expire := time.Now().AddDate(0, 0, 1)
+		// cookie := http.Cookie{Name: "testcookiename", Value: "testcookievalue", Path: "/", Expires: expire, MaxAge: 86400}
+		// http.SetCookie(w, &cookie)
 		w.WriteJson(&book)
 		return
 	} else {

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	version               = "0.1"
+	version               = "0.2"
 	defaultListenAddrPort = "127.0.0.1:8080"
 	ascii_icon            = `
 
@@ -66,7 +66,7 @@ var config Config
 func parseConfig(configPath string) {
 	var err error
 	var exists bool
-	exists, err = isFileExists(configPath)
+	exists, err = IsFileExists(configPath)
 
 	if err != nil && !exists {
 		panic("Fail to load configuration file: " + err.Error())

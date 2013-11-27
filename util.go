@@ -3,14 +3,45 @@ package main
 import (
 	"errors"
 	"os"
+	"os/user"
 	"strconv"
 	"strings"
 	"unicode"
+	"path/filepath"
 )
 
+// expand file path to absolute path
+func ExpandPath(path string) string {
+	if path[0] == '~' {
+		sep := strings.Index(path, string(os.PathSeparator))
+		if sep < 0 {
+			sep = len(path)
+		}
+		var err error
+		var u *user.User
+		username := path[1:sep]
+		if len(username) == 0 {
+			u, err = user.Current()
+		} else {
+			u, err = user.Lookup(username)
+		}
+		if err == nil {
+			path = filepath.Join(u.HomeDir, path[sep:])
+		}
+	}
+	path = os.ExpandEnv(path)
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return path
+	}
+	return abs
+}
+
+
 // Check file is Exists.
-func isFileExists(path string) (bool, error) {
-	stat, err := os.Stat(path)
+func IsFileExists(path string) (bool, error) {
+	expandPath  := ExpandPath(path)
+	stat, err := os.Stat(expandPath)
 	if err == nil {
 		if stat.Mode()&os.ModeType == 0 {
 			return true, nil
@@ -22,6 +53,7 @@ func isFileExists(path string) (bool, error) {
 	}
 	return false, err
 }
+
 
 // Verify the validity of ISBN number
 func  isValidIsbn13(isbn string) bool {
@@ -48,6 +80,7 @@ func  isValidIsbn13(isbn string) bool {
 	}
 	return check%10 == 0
 }
+
 
 // Check error and panic it.
 func checkErr(err error) {
