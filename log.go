@@ -37,22 +37,3 @@ func serverStartInfoLog(logger io.Writer) (*log.Logger) {
 	startInfoLogger := log.New(logger, "[Start] ", log.LstdFlags)
 	return startInfoLogger
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
