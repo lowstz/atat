@@ -26,36 +26,19 @@ var (
 )
 
 // Make a sql query statement for /book/:id api.
-func makeBookCountQuery(keyword []string) string {
-	var condition []string
-	selectQuery := "select count(*) as count from bookinfo where "
-
-	for _, value := range keyword {
-		bookCondition := fmt.Sprintf(
-			"(author like '%%%s%%' or title like '%%%s%%' or summary like '%%%s%%' or isbn='%s' )",
-			value, value, value, value)
-		condition = append(condition, bookCondition)
-	}
-	conditionQuery := strings.Join(condition, " and ")
-	sqlQuery := selectQuery + conditionQuery
-//	fmt.Println(sqlQuery)
-	return sqlQuery
-}
-
-// Make a sql query statement for /book/:id api.
 func makeBookIdQuery(fields []string) string {
 	if len(fields) == 0 {
 		fields = defaultQueryFields
 	}
 	selectQuery := "select "
 	fieldsQuery := strings.Join(fields, ",")
-	//	conditionQuery := " from  bookinfo left join book_category on bookinfo.category_num=book_category.category_num where id=?"
-	conditionQuery := " from bookinfo left join douban on bookinfo.id=douban.book_id " +
-		"left join book_category on bookinfo.category_num=book_category.category_num where id=?"
+	//	conditionQuery := " from  book_items left join book_category on book_items.category_num=book_category.category_num where id=?"
+	conditionQuery := " from book_items left join book_douban on book_items.id=book_douban.book_id " +
+		"left join book_category on book_items.category_num=book_category.category_num where id=?"
 	//	conditionQuery := fmt.Sprintf("book_id='%s'", book_id)
 
 	sqlQuery := selectQuery + fieldsQuery + conditionQuery
-//	fmt.Println(sqlQuery)
+	//	fmt.Println(sqlQuery)
 	return sqlQuery
 }
 
@@ -66,14 +49,31 @@ func makeBookIsbnQuery(fields []string) string {
 	}
 	selectQuery := "select "
 	fieldsQuery := strings.Join(fields, ",")
-	//	conditionQuery := " from bookinfo left join book_category on bookinfo.category_num=book_category.category_num where isbn=?"
-	conditionQuery := " from bookinfo left join douban on bookinfo.id=douban.book_id " +
-		"left join book_category on bookinfo.category_num=book_category.category_num where isbn=?"
+	//	conditionQuery := " from book_items left join book_category on book_items.category_num=book_category.category_num where isbn=?"
+	conditionQuery := " from book_items left join book_douban on book_items.id=book_douban.book_id " +
+		"left join book_category on book_items.category_num=book_category.category_num where isbn=?"
 
 	//	conditionQuery := fmt.Sprintf("book_isbn='%s'", book_isbn)
 
 	sqlQuery := selectQuery + fieldsQuery + conditionQuery
-//	fmt.Println(sqlQuery)
+	//	fmt.Println(sqlQuery)
+	return sqlQuery
+}
+
+// Make a sql query statement for book number count api.
+func makeBookCountQuery(keyword []string) string {
+	var condition []string
+	selectQuery := "select count(*) as count from book_items left join book_pinyin on book_items.id=book_pinyin.book_id where "
+
+	for _, value := range keyword {
+		bookCondition := fmt.Sprintf(
+			"(author like '%%%s%%' or title like '%%%s%%' or summary like '%%%s%%' or pinyin_author like '%%%s%%' or pinyin_title like '%%%s%%' or pinyin_summary like '%%%s%%'  or isbn='%s')",
+			value, value, value, value, value, value, value)
+		condition = append(condition, bookCondition)
+	}
+	conditionQuery := strings.Join(condition, " and ")
+	sqlQuery := selectQuery + conditionQuery
+	//	fmt.Println(sqlQuery)
 	return sqlQuery
 }
 
@@ -86,13 +86,14 @@ func makeKeywordSearchQuery(keyword, fields []string, start, count string) strin
 	var condition []string
 	selectQuery := "select "
 	fieldsQuery := strings.Join(fields, ",")
-	//	oldfromQuery := " from bookinfo left join book_category on bookinfo.category_num=book_category.category_num where "
-	fromQuery := " from bookinfo left join douban on bookinfo.id=douban.book_id " +
-		"left join book_category on bookinfo.category_num=book_category.category_num where "
+	//	oldfromQuery := " from book_items left join book_category on book_items.category_num=book_category.category_num where "
+	fromQuery := " from book_items left join book_douban on book_items.id=book_douban.book_id " +
+		"left join book_category on book_items.category_num=book_category.category_num " +
+		"left join book_pinyin on book_items.id=book_pinyin.book_id where "
 	for _, value := range keyword {
 		bookCondition := fmt.Sprintf(
-			"(author like '%%%s%%' or title like '%%%s%%' or summary like '%%%s%%' or isbn='%s' )",
-			value, value, value, value)
+			"(author like '%%%s%%' or title like '%%%s%%' or summary like '%%%s%%' or pinyin_author like '%%%s%%' or pinyin_title like '%%%s%%' or pinyin_summary like '%%%s%%' or isbn='%s' )",
+			value, value, value, value, value, value)
 		condition = append(condition, bookCondition)
 	}
 
@@ -100,9 +101,9 @@ func makeKeywordSearchQuery(keyword, fields []string, start, count string) strin
 	sortQuery := " order by (average*100+num_raters*0.3) desc "
 	pageQuery := " limit " + start + "," + count
 
-	sqlQuery := selectQuery + fieldsQuery + 
+	sqlQuery := selectQuery + fieldsQuery +
 		fromQuery + conditionQuery + sortQuery + pageQuery
-//	fmt.Println(sqlQuery)
+	//	fmt.Println(sqlQuery)
 	return sqlQuery
 }
 
@@ -141,7 +142,6 @@ func replaceSpecialChar(keyword []string) []string {
 	return secureKeyword
 }
 
-
 // replace unclear search keyword
 // TODO: collect a unclear search keyword database.
 func replaceUnclearChar(keyword []string) []string {
@@ -152,11 +152,11 @@ func replaceUnclearChar(keyword []string) []string {
 			case "C":
 				value = "C语言"
 				clearKeyword = append(clearKeyword, value)
-				break;
+				break
 			case "c":
 				value = "c语言"
 				clearKeyword = append(clearKeyword, value)
-				break;
+				break
 			default:
 				clearKeyword = append(clearKeyword, value)
 			}
