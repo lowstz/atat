@@ -28,7 +28,7 @@ func (cache *RDB)Init() {
 		MaxActive:   0,
 		IdleTimeout: 60 * time.Second,
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("unix", "/tmp/redis.sock")
+			c, err := redis.Dial(config.cache.protocol, config.cache.addr)
 			if err != nil {
 				return nil, err
 			}
