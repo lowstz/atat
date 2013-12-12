@@ -5,39 +5,49 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+//	"fmt"
 )
 
 // Use for return status if some exception occurs.
+type Controller struct {
+	useCache bool
+}
+
 type ResourceStatus struct {
 	Msg     string
 	Code    int
 	Request string
 }
 
-// Return a ResourceStatus struct if Resource not found.
-func ResourceNotFound(req *rest.Request) *ResourceStatus {
-	return &ResourceStatus{
-		Msg:     "Resource not found",
-		Code:    404,
-		Request: req.Method + " " + req.URL.Path + req.URL.RawQuery,
-	}
-}
+
+var controller Controller
+
+// func (controller *Controller) Init () {
+// 	if config.global.cacheEable {
+// 		if engine.indexComplete {
+// 			controller.useCache = true
+// 		}
+// 	} else {
+// 		controller.useCache = false
+// 	}
+// }
+
 
 // controller for route /book/:id
 // Query a book_id and response one single book information in a json.
-func GetBookFromBookId(w *rest.ResponseWriter, req *rest.Request) {
+func (controller *Controller) GetBookFromBookId(w *rest.ResponseWriter, req *rest.Request) {
 	bookId := req.PathParam("id")
 	parameter := req.URL.Query()
 	fieldsMap := parameter["fields"]
 
 	if len(bookId) != 8 {
-		NotFoundError(w, req)
+		controller.NotFoundError(w, req)
 		return
 	}
 
 	fields := fieldsFilter(fieldsMap)
 	//	checkErr(err)
-	book, err := modelQueryBookFromBookId(bookId, fields)
+	book, err := model.QueryBookFromBookId(bookId, fields)
 	checkErr(err)
 
 	if book.Id != " " {
@@ -47,33 +57,33 @@ func GetBookFromBookId(w *rest.ResponseWriter, req *rest.Request) {
 		w.WriteJson(&book)
 		return
 	} else {
-		NotFoundError(w, req)
+		controller.NotFoundError(w, req)
 		return
 	}
 }
 
 // controller for route /book/isbn/:isbn
 // Query from book_isbn and response one single book information in a json.
-func GetBookFromBookISBN(w *rest.ResponseWriter, req *rest.Request) {
+func (controller *Controller) GetBookFromBookISBN(w *rest.ResponseWriter, req *rest.Request) {
 	book_isbn := req.PathParam("isbn")
 	parameter := req.URL.Query()
 	fieldsMap := parameter["fields"]
 
 	if !isValidIsbn13(book_isbn) {
-		NotFoundError(w, req)
+		controller.NotFoundError(w, req)
 		return
 	}
 
 	fields := fieldsFilter(fieldsMap)
 
-	book, err := modelQueryBookFromBookIsbn(book_isbn, fields)
+	book, err := model.QueryBookFromBookIsbn(book_isbn, fields)
 	checkErr(err)
 
 	if book.Isbn != " " {
 		w.WriteJson(&book)
 		return
 	} else {
-		NotFoundError(w, req)
+		controller.NotFoundError(w, req)
 		return
 	}
 }
@@ -81,7 +91,7 @@ func GetBookFromBookISBN(w *rest.ResponseWriter, req *rest.Request) {
 // controller for route /book/search/
 // Query from keyword and response a booklist with all book
 // match keyword in a json.
-func GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
+func (controller *Controller) GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
 	parameter := req.URL.Query()
 //	log.Println(req.URL.RawQuery)
 	keywordMap := parameter["q"]
@@ -90,30 +100,30 @@ func GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
 	fieldsMap := parameter["fields"]
 
 	var (
-		keyword, fields []string
+		keywords, fields []string
 		start, count    string
 	)
 	if len(keywordMap) == 0 {
-		NotFoundError(w, req)
+		controller.NotFoundError(w, req)
 		return
 	} else if keywordMap[0] == " " {
-		NotFoundError(w, req)
+		controller.NotFoundError(w, req)
 		return
 	} else if keywordMap[0] == "" {
-		NotFoundError(w, req)
+		controller.NotFoundError(w, req)
 		return
 	} else {
-		keyword = strings.Split(keywordMap[0], " ")
-		keyword = replaceSpecialChar(keyword)
-		keyword = replaceUnclearChar(keyword)
-		if len(keyword) == 0 {
-			NotFoundError(w, req)
+		keywords = strings.Split(keywordMap[0], " ")
+		keywords = replaceSpecialChar(keywords)
+		keywords = replaceUnclearChar(keywords)
+		if len(keywords) == 0 {
+			controller.NotFoundError(w, req)
 			return
 		}
 	}
 
 	fields = fieldsFilter(fieldsMap)
-
+//	fmt.Println(fields)
 	if len(startMap) == 0 {
 		start = "0"
 	} else {
@@ -133,25 +143,53 @@ func GetBookListFromKeyword(w *rest.ResponseWriter, req *rest.Request) {
 	//	fmt.Println(fields)
 	//	fmt.Println(start)
 	//	fmt.Println(count)
-	booklist, err := modelQueryBookListFromKeyword(keyword, fields, start, count)
-	checkErr(err)
-
-	// if keyword search result is null, return 404
-	if booklist.Total == 0 {
-		NotFoundError(w, req)
-		return
+	if controller.useCache {
+		cacheResult := engine.Query(keywords, start, count)
+		if cacheResult.total == 0 {
+			controller.NotFoundError(w, req)
+			return
+		} else if len(cacheResult.books) == 0 {
+			booklist := model.QueryBookListIfEmptySet(cacheResult, fields, start, count)
+			w.WriteJson(&booklist)
+			return			
+		} else {
+			booklist, err := model.QueryBookListFromCache(cacheResult, fields, start, count)
+//			fmt.Println(booklist)
+			checkErr(err)
+			w.WriteJson(&booklist)
+			return
+		}
+		// if keyword search result is null, return 404
 	} else {
-		w.WriteJson(&booklist)
-		return
+		booklist, err := model.QueryBookListFromKeyword(keywords, fields, start, count)		
+		checkErr(err)
+		
+		// if keyword search result is null, return 404
+		if booklist.Total == 0 {
+			controller.NotFoundError(w, req)
+			return
+		} else {
+			w.WriteJson(&booklist)
+			return
+		}
 	}
 }
 
 // return 404 json response
-func NotFoundError(w *rest.ResponseWriter, req *rest.Request) {
+func (controller *Controller)NotFoundError(w *rest.ResponseWriter, req *rest.Request) {
 	var statusMsg ResourceStatus = *ResourceNotFound(req)
 	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(http.StatusNotFound)
 	w.WriteJson(&statusMsg)
+}
+
+// Return a ResourceStatus struct if Resource not found.
+func ResourceNotFound(req *rest.Request) *ResourceStatus {
+	return &ResourceStatus{
+		Msg:     "Resource not found",
+		Code:    404,
+		Request: req.Method + " " + req.URL.Path + req.URL.RawQuery,
+	}
 }
 
 // Filter invalid field in the original fieldlist.

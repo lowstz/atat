@@ -8,6 +8,8 @@ import (
 	"strings"
 	"unicode"
 	"path/filepath"
+	"crypto/sha1"
+	"encoding/hex"
 )
 
 // expand file path to absolute path
@@ -81,6 +83,12 @@ func  isValidIsbn13(isbn string) bool {
 	return check%10 == 0
 }
 
+func Sha1Hasher(sql_str string) string {
+	hasher := sha1.New()
+	hasher.Write([]byte(sql_str))
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
 
 // Check error and panic it.
 func checkErr(err error) {
@@ -88,3 +96,14 @@ func checkErr(err error) {
 		panic(err)
 	}
 }
+
+
+
+
+
+
+
+
+
+
+

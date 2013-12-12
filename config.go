@@ -34,29 +34,40 @@ const (
 
 // Packaged all settings
 type Config struct {
-	Debug   bool
-	LogFile string
-	Server  Server
-	Db      Database
+	global  Global
+	server  Server
+	db      Database
+	cache   Cache
+}
+
+type Global struct {
+	debug bool
+	cacheEable bool
+	logFile string
 }
 
 // Packaged all database settings
 type Database struct {
-	Addr     string
-	Protocol string
-	User     string
-	Password string
-	Dbname   string
+	addr     string
+	protocol string
+	user     string
+	password string
+	dbname   string
 }
 
 // Packaged all Server settings
 type Server struct {
-	ListenAddr    string
-	Port          string
-	CPUCore       int
-	Gzip          bool
-	JsonIndent    bool
-	StatusService bool
+	listenAddr    string
+	port          string
+	cpuCore       int
+	gzip          bool
+	jsonIndent    bool
+	statusService bool
+}
+
+type Cache struct {
+	addr string
+	protocol string
 }
 
 // Define a global config varible
@@ -79,47 +90,57 @@ func parseConfig(configPath string) {
 
 	// Parse the global setcion
 	if cfg.MustValue("global", "debug") == "true" {
-		config.Debug = true
+		config.global.debug = true
 	} else {
-		config.Debug = false
+		config.global.debug = false
 	}
+	if cfg.MustValue("global", "cache_enable") == "true" {
+		config.global.cacheEable = true
+	} else {
+		config.global.cacheEable = false
+	}
+	config.global.logFile = cfg.MustValue("global", "logfile")
 
-	config.LogFile = cfg.MustValue("global", "logfile")
 
 	// Parse the server setcion
 	if cfg.MustValue("server", "gzip") == "true" {
-		config.Server.Gzip = true
+		config.server.gzip = true
 	} else {
-		config.Server.Gzip = false
+		config.server.gzip = false
 	}
 
 	if cfg.MustValue("server", "status_service") == "true" {
-		config.Server.StatusService = true
+		config.server.statusService = true
 	} else {
-		config.Server.StatusService = false
+		config.server.statusService = false
 	}
 
 	if cfg.MustValue("server", "json_indent") == "true" {
-		config.Server.JsonIndent = false
+		config.server.jsonIndent = false
 	} else {
-		config.Server.JsonIndent = true
+		config.server.jsonIndent = true
 	}
-
-	config.Server.CPUCore, err = strconv.Atoi(cfg.MustValue("server", "core"))
+	config.server.cpuCore, err = strconv.Atoi(cfg.MustValue("server", "core"))
 	checkErr(err)
-	config.Server.ListenAddr = cfg.MustValue("server", "listen")
-	config.Server.Port = cfg.MustValue("server", "port")
+	config.server.listenAddr = cfg.MustValue("server", "listen")
+	config.server.port = cfg.MustValue("server", "port")
+
 
 	// Parse the database setcion
-	config.Db.Addr = cfg.MustValue("database", "addr")
-	config.Db.Protocol = cfg.MustValue("database", "protocol")
-	config.Db.User = cfg.MustValue("database", "user")
-	config.Db.Password = cfg.MustValue("database", "password")
-	config.Db.Dbname = cfg.MustValue("database", "dbname")
+	config.db.addr = cfg.MustValue("database", "addr")
+	config.db.protocol = cfg.MustValue("database", "protocol")
+	config.db.user = cfg.MustValue("database", "user")
+	config.db.password = cfg.MustValue("database", "password")
+	config.db.dbname = cfg.MustValue("database", "dbname")
+
+
+	// Parse the cache section
+	config.cache.addr = cfg.MustValue("cache", "addr")
+	config.cache.protocol = cfg.MustValue("cache", "protocol")
 
 	// fmt.Println("cpucore: ",config.Server.CPUCore)
 	// fmt.Println("port: ",config.Server.Port)
 	// fmt.Println("Status: ", config.Server.StatusService)
 	// fmt.Println("Gzip: ", config.Server.Gzip)
-	//	log.Println("debug: ", config.Server.JsonIndent)
+	// log.Println("debug: ", config.Server.JsonIndent)
 }

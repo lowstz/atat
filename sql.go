@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+
 )
 
 var (
@@ -37,7 +38,7 @@ func makeBookIdQuery(fields []string) string {
 		"left join book_category on book_items.category_num=book_category.category_num where id=?"
 	//	conditionQuery := fmt.Sprintf("book_id='%s'", book_id)
 
-	sqlQuery := selectQuery + fieldsQuery + conditionQuery
+	sqlQuery := selectQuery + fieldsQuery + conditionQuery	
 //	fmt.Println(sqlQuery)
 	return sqlQuery
 }
@@ -67,18 +68,19 @@ func makeBookCountQuery(keyword []string) string {
 
 	for _, value := range keyword {
 		bookCondition := fmt.Sprintf(
-			"(author like '%%%s%%' or title like '%%%s%%' or summary like '%%%s%%' or pinyin_author like '%%%s%%' or pinyin_title like '%%%s%%' or pinyin_summary like '%%%s%%'  or isbn='%s')",
-			value, value, value, value, value, value, value)
+			"(author like '%%%s%%' or title like '%%%s%%' or summary like '%%%s%%' or isbn='%s')",
+			value, value, value, value)
 		condition = append(condition, bookCondition)
 	}
 	conditionQuery := strings.Join(condition, " and ")
 	sqlQuery := selectQuery + conditionQuery
 //	fmt.Println(sqlQuery)
-	return sqlQuery
+//	sqlHash := Sha1Hasher(sqlQuery)
+	return sqlQuery  // sqlHash
 }
 
 // Make a sql query statement for /book/search api.
-func makeKeywordSearchQuery(keyword, fields []string, start, count string) string {
+func makeKeywordSearchQuery(keywords, fields []string, start, count string) string {
 	if len(fields) == 0 {
 		fields = defaultQueryFields
 	}
@@ -89,15 +91,16 @@ func makeKeywordSearchQuery(keyword, fields []string, start, count string) strin
 	//	oldfromQuery := " from book_items left join book_category on book_items.category_num=book_category.category_num where "
 	fromQuery := " from book_items " +
 		"left join book_category on book_items.category_num=book_category.category_num where "
-	for _, value := range keyword {
+	for _, value := range keywords {
 		bookCondition := fmt.Sprintf(
-			"(author like '%%%s%%' or title like '%%%s%%' or summary like '%%%s%%' or pinyin_author like '%%%s%%' or pinyin_title like '%%%s%%' or pinyin_summary like '%%%s%%' or isbn='%s' )",
-			value, value, value, value, value, value)
+			"(author like '%%%s%%' or title like '%%%s%%' or summary like '%%%s%%' or isbn='%s' )",
+			value, value, value, value)
 		condition = append(condition, bookCondition)
 	}
 
 	conditionQuery := strings.Join(condition, " and ")
-	sortQuery := " order by (average*100+num_raters*0.3) desc "
+//	sortQuery := " order by (average*100+num_raters*0.3) desc "
+	sortQuery := " order by rank desc "
 	pageQuery := " limit " + start + "," + count
 
 	sqlQuery := selectQuery + fieldsQuery +
@@ -105,6 +108,21 @@ func makeKeywordSearchQuery(keyword, fields []string, start, count string) strin
 //	fmt.Println(sqlQuery)
 	return sqlQuery
 }
+
+func makeCacheKeywordSearchQuery(idlist , fields []string) string {
+	if len(fields) == 0 {
+		fields = defaultQueryFields
+	}
+	selectQuery := "select "
+	fieldsQuery := strings.Join(fields, ",")
+	condition   := strings.Join(idlist, ",")
+	fromQuery   := " from book_items left join book_category on book_items.category_num=book_category.category_num where id in (" + condition + ") order by rank desc"
+//	fromQuery   := " from book_items where id in (" + condition + ")"
+	sqlQuery := selectQuery + fieldsQuery + fromQuery
+//	fmt.Println(sqlQuery)
+	return sqlQuery
+}
+
 
 // Replace unsafe request keyword query parameters.
 func replaceSpecialChar(keyword []string) []string {
