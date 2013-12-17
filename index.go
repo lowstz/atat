@@ -5,7 +5,7 @@ import (
 //	"database/sql"
 	"github.com/garyburd/redigo/redis"
 //	_ "github.com/go-sql-driver/mysql"
-	"github.com/lowstz/sego"
+	"github.com/huichen/sego"
 	"log"
 	"os"
 	"strconv"
@@ -71,7 +71,6 @@ func (engine *Engine) Init() {
 	existindexStatus,err := redis.Int(rdb.Do("EXISTS", key))
 	if existindexStatus == 0 {
 		rdb.Do("SET", key, 0)
-		rdb.Close()
 	}
 	indexStatus, err := redis.Int(rdb.Do("GET", key))
 	checkErr(err)
@@ -80,6 +79,7 @@ func (engine *Engine) Init() {
 	} else {
 		engine.indexComplete = false
 	}
+	rdb.Close()
 }
 
 func (engine *Engine) IndexAll() {

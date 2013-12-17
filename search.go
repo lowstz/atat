@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/garyburd/redigo/redis"	
-	"github.com/lowstz/sego"
+	"github.com/huichen/sego"
 	"time"
 //	"strings"
 //	"fmt"
@@ -26,8 +26,10 @@ func (engine *Engine) Query (keywords []string, start, count string) (QueryResul
 //		queryResult.books = cache.queryBooklistFromCache(cacheKey, start, count)
 	} else {
 		cache.storeCacheKey(keywords, cacheKey)
-		go cache.PreloadBookList(cacheKey)
 		queryResult = cache.queryBooklistFromCache(cacheKey, start, count)
+		if queryResult.total > 0 {
+			go cache.PreloadBookList(cacheKey)			
+		}
 //		queryResult.total = cache.queryCountFromCache(cacheKey)
 //		queryResult.books = cache.queryBooklistFromCache(cacheKey, start, count)
 //		fmt.Println(queryResult.books)
@@ -54,9 +56,9 @@ func (engine *Engine) keywordsFormat (keywords []string) ([]string) {
 
 func (engine *Engine) checkStatus() {
 	
+	for {
 	rdb := cache.redispool.Get()
 	key := indexConfigPre + "indexcomplete"
-	for {
 	status, err := redis.Int(rdb.Do("GET", key))
 	checkErr(err)
 		if status == 1 {

@@ -119,7 +119,7 @@ func makeCacheKeywordSearchQuery(idlist , fields []string) string {
 	fromQuery   := " from book_items left join book_category on book_items.category_num=book_category.category_num where id in (" + condition + ") order by rank desc"
 //	fromQuery   := " from book_items where id in (" + condition + ")"
 	sqlQuery := selectQuery + fieldsQuery + fromQuery
-//	fmt.Println(sqlQuery)
+	fmt.Println(sqlQuery)
 	return sqlQuery
 }
 

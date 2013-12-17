@@ -254,9 +254,11 @@ func mapDataToStruct(fields, data []string) Book {
 				data[key] = " "
 			}
 //			fmt.Println(data[key])
-			floatdata, err := strconv.ParseFloat(data[key],64)
-			checkErr(err)
-			bookValue.FieldByName(strings.Title(value)).SetFloat(floatdata)
+			if data[key] != " " {
+				floatdata, err := strconv.ParseFloat(data[key],64)				
+				checkErr(err)
+				bookValue.FieldByName(strings.Title(value)).SetFloat(floatdata)
+			}
 		case reflect.Struct:
 			f := make(map[string]string)
 			json.Unmarshal([]byte(data[key]), &f)

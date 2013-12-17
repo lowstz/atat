@@ -50,9 +50,9 @@ func main() {
 		go engine.IndexAll()
 		go engine.checkStatus()
 	}
-	startLogger.Println("Starting Initialize Controller")
+//	startLogger.Println("Starting Initialize Controller")
 //	controller.Init()
-	startLogger.Println("Initialize Controller Successful")
+//	startLogger.Println("Initialize Controller Successful")
 
 //	indexLogger.Println("Initialize Indexer Successful.")
 
