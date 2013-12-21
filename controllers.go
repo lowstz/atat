@@ -32,6 +32,30 @@ var controller Controller
 // 	}
 // }
 
+func (controller *Controller) GetAppRelease(w *rest.ResponseWriter, req *rest.Request) {
+	parameter := req.URL.Query()
+	verMap := parameter["ver"]
+	var verCode string
+
+	if len(verMap) == 0 {
+		verCode = "latest"
+	} else {
+		if stringIsDigit(verMap[0]) {
+			verCode = verMap[0]
+		} else {
+			verCode = "latest"
+		}
+	}
+	appRelease := model.QueryAppRelease(verCode)
+	if appRelease.VerName != ""  {
+		w.WriteJson(&appRelease)
+		return
+	} else {
+		controller.NotFoundError(w, req)
+		return
+	}
+}
+
 
 // controller for route /book/:id
 // Query a book_id and response one single book information in a json.

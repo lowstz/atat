@@ -11,10 +11,9 @@ import (
 //	"flag"
 )
 
-//var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+// var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 func main() {
-
 	// flag.Parse()
     // if *cpuprofile != "" {
     //     f, err := os.Create(*cpuprofile)
@@ -64,6 +63,7 @@ func main() {
 	handler.Logger = log.New(logFile, "[Request] ", log.LstdFlags)
 
 	handler.SetRoutes(
+		rest.Route{"GET", "/app/release", controller.GetAppRelease},
 		rest.Route{"GET", "/book/search", controller.GetBookListFromKeyword},
 		rest.Route{"HEAD", "/book/search", controller.GetBookListFromKeyword},
 		rest.Route{"GET", "/book/:id", controller.GetBookFromBookId},
@@ -82,3 +82,5 @@ func main() {
 		http.ListenAndServe(defaultListenAddrPort, &handler)
 	}
 }
+
+

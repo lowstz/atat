@@ -4,6 +4,7 @@ import (
 	"github.com/garyburd/redigo/redis"	
 	"github.com/huichen/sego"
 	"time"
+	"runtime"
 //	"strings"
 //	"fmt"
 )
@@ -66,6 +67,7 @@ func (engine *Engine) checkStatus() {
 		} else {
 			controller.useCache = false
 		}
+		runtime.GC()
 		time.Sleep(30 * time.Second)
 	}
 }

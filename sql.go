@@ -119,8 +119,18 @@ func makeCacheKeywordSearchQuery(idlist , fields []string) string {
 	fromQuery   := " from book_items left join book_category on book_items.category_num=book_category.category_num where id in (" + condition + ") order by rank desc"
 //	fromQuery   := " from book_items where id in (" + condition + ")"
 	sqlQuery := selectQuery + fieldsQuery + fromQuery
-	fmt.Println(sqlQuery)
+//	fmt.Println(sqlQuery)
 	return sqlQuery
+}
+
+func makeAppRelease(verCode string) string {
+	if verCode == "latest" {
+		sqlQuery := "select * from app_release order by vercode desc limit 0,1"
+		return sqlQuery
+	} else {
+		sqlQuery := "select * from app_release where vercode=" + verCode
+		return sqlQuery
+	}
 }
 
 
@@ -182,3 +192,14 @@ func replaceUnclearChar(keyword []string) []string {
 	//	fmt.Println(secureKeyword)
 	return clearKeyword
 }
+
+
+// func handleNullField(fields []string, field string) []string {
+// 	for p, v := range fields {
+// 		if v == field {
+// 			fields[p] = "coalesce(" + field + ", 'unknown') as " + field
+// 			//			return p
+// 		}
+// 	}
+// 	return fields
+// }

@@ -44,6 +44,15 @@ type BookList struct {
 	Books []Book
 }
 
+type AppRelease struct {
+	VerCode int
+	VerName string
+	AppName string
+	ApkName string
+	ApkUrl  string
+	ApkMd5  string 
+}
+
 type Model struct {
 	db *sql.DB
 }
@@ -59,13 +68,14 @@ func (model *Model) Init() {
 			config.db.dbname+"?&charset=utf8")
 
 	checkErr(err)
-	db.SetMaxIdleConns(3)
+	db.SetMaxOpenConns(200)
+	db.SetMaxIdleConns(10)
 	model.db = db
 }
 
 // Statistics books number of search results.
 func (model *Model) QueryBookCount(keyword []string) (int, error) {
-
+	
 	var itemCount int
 	query := makeBookCountQuery(keyword)
 	//	log.Println(query)
@@ -78,6 +88,8 @@ func (model *Model) QueryBookCount(keyword []string) (int, error) {
 // Fetch a single book information from book_id and
 // return as a Book struct.
 func (model *Model) QueryBookFromBookId(book_id string, fields []string) (Book, error) {
+	err := model.db.Ping()
+	checkErr(err)
 
 	query := makeBookIdQuery(fields)
 	//	rows, err := db.Query(query)
@@ -98,14 +110,41 @@ func (model *Model) QueryBookFromBookId(book_id string, fields []string) (Book, 
 		checkErr(err)
 	}
 	book := mapDataToStruct(fields, data)
+
 	rows.Close()
+	stmt.Close()
 //	db.Close()
 	return book, err
 }
 
+func (model *Model) QueryAppRelease(verCode string) AppRelease {
+	err := model.db.Ping()
+	checkErr(err)
+
+	query := makeAppRelease(verCode)
+	rows, err := model.db.Query(query)
+	checkErr(err)
+	var appRelease AppRelease
+	for rows.Next() {
+		err := rows.Scan(
+			&appRelease.VerCode,
+			&appRelease.VerName,
+			&appRelease.AppName,
+			&appRelease.ApkName,
+			&appRelease.ApkUrl,
+			&appRelease.ApkMd5,
+		)
+		checkErr(err)
+	}
+	return appRelease
+}
+
+
 // Fetch a single book information from book_isbn and
 // return as a Book struct.
 func (model *Model) QueryBookFromBookIsbn(book_isbn string, fields []string) (Book, error) {
+	err := model.db.Ping()
+	checkErr(err)
 
 	query := makeBookIsbnQuery(fields)
 	stmt, err := model.db.Prepare(query)
@@ -126,6 +165,7 @@ func (model *Model) QueryBookFromBookIsbn(book_isbn string, fields []string) (Bo
 	}
 	book := mapDataToStruct(fields, data)
 	rows.Close()
+	stmt.Close()
 //	model.db.Close()
 	return book, err
 }
@@ -134,6 +174,9 @@ func (model *Model) QueryBookFromBookIsbn(book_isbn string, fields []string) (Bo
 // return as a BookList struct.
 func (model *Model) QueryBookListFromKeyword(keywords, fields []string, start, count string) (BookList, error) {
 	//	fmt.Println(fields)
+	err := model.db.Ping()
+	checkErr(err)
+
 	total, err := model.QueryBookCount(keywords)
 	checkErr(err)
 
@@ -166,6 +209,8 @@ func (model *Model) QueryBookListFromKeyword(keywords, fields []string, start, c
 }
 
 func (model *Model) QueryBookListFromCache(cacheResult QueryResult, fields []string, start, count string) (BookList, error) {
+	err := model.db.Ping()
+	checkErr(err)
 	var booklist BookList
 	booklist.Start, _ = strconv.Atoi(start)
 	booklist.Count, _ = strconv.Atoi(count)
@@ -225,6 +270,7 @@ func (model *Model) QueryBookListIfEmptySet (cacheResult QueryResult, fields []s
 	// rows.Close()
 	return booklist
 }
+
 
 
 // map Fetched data slice to Book struct

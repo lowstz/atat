@@ -89,6 +89,14 @@ func Sha1Hasher(sql_str string) string {
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
+func stringIsDigit(str string) bool {
+	for _, r := range str {
+		if !unicode.IsDigit(r) {
+			return false
+		}
+	}
+	return true
+}
 
 // Check error and panic it.
 func checkErr(err error) {
@@ -96,6 +104,7 @@ func checkErr(err error) {
 		panic(err)
 	}
 }
+
 
 
 
