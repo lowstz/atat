@@ -123,6 +123,7 @@ func (controller *Controller) GetBookListFromKeyword(w *rest.ResponseWriter, req
 	countMap := parameter["count"]
 	fieldsMap := parameter["fields"]
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	var (
 		keywords, fields []string
 		start, count    string
